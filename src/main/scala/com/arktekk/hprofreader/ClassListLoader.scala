@@ -8,8 +8,7 @@ import java.util.zip.{ZipEntry, ZipFile}
  */
 
 class ClassListLoader(val path: String) {
-
-  def collect(zipFile: ZipFile): Map[String, (ZipFile, ZipEntry)] = {
+  def collectZipFile(zipFile: ZipFile): Map[String, (ZipFile, ZipEntry)] = {
     new RichEnumeration(zipFile.entries).foldRight(Map[String, (ZipFile, ZipEntry)]()) {
       (entry, map) => {
         val name = entry.getName
@@ -21,32 +20,30 @@ class ClassListLoader(val path: String) {
     }
   }
 
+  def collect(file: File): Map[String, (ZipFile, ZipEntry)] = {
+    if (file.isDirectory) {
+      collectDirectory(file)
+    } else if (file.isFile) {
+      if (file.getName.endsWith(".jar"))
+        collectZipFile(new ZipFile(file))
+      else
+        Map[String, (ZipFile, ZipEntry)]()
+    } else {
+      error("File " + file + " exists, but is neither file nor directory; meesa confused")
+    }
+  }
+
   def collectDirectory(directory: File): Map[String, (ZipFile, ZipEntry)] = {
     directory.listFiles.foldRight(Map[String, (ZipFile, ZipEntry)]()) {
       (file, map) => {
-        if (file.isFile) {
-          if (file.getName.endsWith(".jar"))
-            map ++ collect(new ZipFile(file))
-          else
-            map
-        } else if (file.isDirectory) {
-          map ++ collectDirectory(file)
-        } else {
-          error("File " + file + " exists, but is neither file nor directory; meesa confused")
-        }
+        map ++ collect(file)
       }
     }
   }
 
   val file = new File(path)
   val classes: Map[String, (ZipFile, ZipEntry)] = if (file.exists) {
-    if (file.isDirectory) {
-      collectDirectory(file)
-    } else if (file.isFile) {
-      collect(new ZipFile(file))
-    } else {
-      error("File " + path + " exists, but is neither file nor directory; meesa confused")
-    }
+    collect(file)
   } else {
     error("File " + path + " does not exist")
   }
