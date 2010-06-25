@@ -1,4 +1,4 @@
-package com.arktekk.hprofreader
+//package com.arktekk.hprofreader
 
 import com.sun.tools.hat.internal.parser.Reader
 import com.sun.tools.hat.internal.model._
@@ -26,11 +26,7 @@ if (!file.exists) {
   val mine = new Wrapper(snapshot.getClasses.asInstanceOf[java.util.Iterator[JavaClass]]).filter(_.asInstanceOf[JavaClass].getName.startsWith(interestPath))
   /*
   var clazz = HprofAnalyse.mine.next
-  new Analyser.RichEnumeration(clazz.getInstances(false)).foreach {
-    obj =>
-      Analyser.checkReferencesAndPrintResult(obj.asInstanceOf[JavaObject])
-  }
-
+  Analyser.checkReferencesAndPrintResult(clazz, HprofAnalyse.interestPath)
   */
   println("Analysed");
   //}
