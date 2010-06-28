@@ -9,8 +9,8 @@ import java.util.zip.{ZipEntry, ZipFile}
 
 class ClassListLoader(val path: String) {
   def collectZipFile(zipFile: ZipFile): Map[String, (ZipFile, ZipEntry)] = {
-    new RichEnumeration(zipFile.entries).foldRight(Map[String, (ZipFile, ZipEntry)]()) {
-      (entry, map) => {
+    new RichEnumeration(zipFile.entries).foldLeft(Map[String, (ZipFile, ZipEntry)]()) {
+      (map, entry) => {
         val name = entry.getName
         if (name.endsWith(".class"))
           map + (name.replaceAll("\\.class", "").replaceAll("/", ".") -> (zipFile, entry))
@@ -34,8 +34,8 @@ class ClassListLoader(val path: String) {
   }
 
   def collectDirectory(directory: File): Map[String, (ZipFile, ZipEntry)] = {
-    directory.listFiles.foldRight(Map[String, (ZipFile, ZipEntry)]()) {
-      (file, map) => {
+    directory.listFiles.foldLeft(Map[String, (ZipFile, ZipEntry)]()) {
+      (map, file) => {
         map ++ collect(file)
       }
     }
