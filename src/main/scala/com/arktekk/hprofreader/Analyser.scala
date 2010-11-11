@@ -15,18 +15,23 @@ object Analyser {
     val InInterestPath = Value("InInterestPath")
     val InAppServerLibrary = Value("InAppServerLibrary")
     val InDeepStructure = Value("InDeepStructure")
+    val StaticField = Value("StaticField")
   }
 
   def toStringJavaObject(obj: JavaLazyReadObject): String = {
     obj.getClazz.getName + "(" + obj.getId + ")"
   }
-  
+
   case class InstanceStack(stack: List[JavaLazyReadObject], reason: BreakOffReason.Value) {
-    override def toString = reason + ": " + stack.foldRight("") {(obj, string) =>  string + (if (string.length == 0) "" else " -> ") + toStringJavaObject(obj)}
+    override def toString = reason + ": " + stack.foldRight("") {(obj, string) => string + (if (string.length == 0) "" else " -> ") + toStringJavaObject(obj)}
   }
 
   def evaluate(instanceStack: InstanceStack): List[InstanceStack] = instanceStack.reason match {
     case BreakOffReason.InAppServerLibrary => instanceStack :: Nil
+    /*case BreakOffReason.InDeepStructure => instanceStack :: Nil
+    case BreakOffReason.NoReferers => instanceStack :: Nil
+    case BreakOffReason.InfiniteLoop => instanceStack :: Nil
+    case BreakOffReason.InInterestPath => instanceStack :: Nil*/
     case _ => Nil
   }
 
@@ -48,17 +53,19 @@ object Analyser {
     } else if (depth > 250) {
       error(new InstanceStack(newVisited, BreakOffReason.MaxDepthExceeded).toString)
     } else {
-      val referers = new RichEnumeration(obj.getReferers)
-      if (referers.hasNext) {
-        referers.foldRight(List[InstanceStack]()) {
-          (ref, instanceStacks) => ref match {
-            case ref: JavaLazyReadObject => checkReferences(ref, depth + 1, newVisited, interestPath, appServerClassMap) ::: instanceStacks
-            case ref: JavaClass => {
-              // TODO: This is probably an enum instance, but what is a enum instance to class reference?
-              instanceStacks
-            }
-            case ref => error("Got unknown class: " + ref)
+      val filteredReferers = new RichEnumeration(obj.getReferers).filter({
+        ref => ref match {
+          case ref: JavaLazyReadObject => true
+          case ref: JavaClass => {
+            // TODO: This is probably an enum instance, but what is a enum instance to class reference?
+            false
           }
+          case ref => error("Got unknown class: " + ref)
+        }
+      }).map(_.asInstanceOf[JavaLazyReadObject])
+      if (filteredReferers.hasNext) {
+        filteredReferers.foldRight(List[InstanceStack]()) {
+          (ref, instanceStacks) => checkReferences(ref, depth + 1, newVisited, interestPath, appServerClassMap) ::: instanceStacks
         }
       } else {
         evaluate(new InstanceStack(newVisited, BreakOffReason.NoReferers))
@@ -67,12 +74,18 @@ object Analyser {
   }
 
   def checkReferencesAndPrintResult(clazz: JavaClass, interestPath: String, appServerClassMap: Map[String, (ZipFile, ZipEntry)]): Unit = {
-    println("Analyzing class: " + clazz.getName)
-    new RichEnumeration(clazz.getInstances(false)).foreach {
-      obj => {
-        val javaObject = obj.asInstanceOf[JavaLazyReadObject]
-        println("Analyzing instance: " + toStringJavaObject(javaObject))
-        checkReferences(javaObject, 0, Nil, interestPath, appServerClassMap).foreach {instanceStack => println(instanceStack)}
+    val instances = new RichEnumeration(clazz.getInstances(false))
+    if (instances.hasNext) {
+      println("Analyzing class: " + clazz.getName)
+      instances.foreach {
+        obj => {
+          val javaObject = obj.asInstanceOf[JavaLazyReadObject]
+          println("Analyzing instance: " + toStringJavaObject(javaObject))
+          val stackInstances = checkReferences(javaObject, 0, Nil, interestPath, appServerClassMap)
+          stackInstances.foreach {
+            instanceStack => println(instanceStack)
+          }
+        }
       }
     }
   }

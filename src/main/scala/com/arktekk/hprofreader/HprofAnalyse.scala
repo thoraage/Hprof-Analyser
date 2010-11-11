@@ -21,11 +21,11 @@ object HprofAnalyse {
       if (!file.exists) {
         usage("File " + fileName + " not found");
       } else {
-        val snapshot = Reader.readFile("/Users/thoraageeldby/Documents/Arktekk/Sources/callway/dump.hprof", true, 0)
+        val snapshot = Reader.readFile(fileName, true, 0)
         snapshot.resolve(true)
         val interestPath = "com.tandberg"
         val classes = new ClassListLoader("/opt/local/packages/glassfish/lib").classes ++ new ClassListLoader("/opt/local/packages/glassfish/domains/domain1/lib").classes
-        val mine = new Wrapper(snapshot.getClasses.asInstanceOf[java.util.Iterator[JavaClass]]).filter(_.asInstanceOf[JavaClass].getName.startsWith(interestPath))
+        val mine = snapshot.getClasses.asInstanceOf[java.util.Iterator[JavaClass]].filter(_.asInstanceOf[JavaClass].getName.startsWith(interestPath)).filter(!_.asInstanceOf[JavaClass].getName.contains("EntityFilter"))
 
         mine.foreach {
           clazz =>
