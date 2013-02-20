@@ -2,3 +2,8 @@
 *.iws
 *.ipr
 target
+.ensime
+lib_managed
+t
+project/boot
+project/build/target

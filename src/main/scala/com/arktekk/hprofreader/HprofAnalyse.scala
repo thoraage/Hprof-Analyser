@@ -1,8 +1,5 @@
 package com.arktekk.hprofreader
 
-import com.sun.tools.hat.internal.parser.Reader
-import com.sun.tools.hat.internal.model._
-import collection.jcl.MutableIterator.Wrapper
 import java.io.File
 
 /**
@@ -21,16 +18,17 @@ object HprofAnalyse {
       if (!file.exists) {
         usage("File " + fileName + " not found");
       } else {
-        val snapshot = Reader.readFile(fileName, true, 0)
-        snapshot.resolve(true)
-        val interestPath = "com.tandberg"
-        val classes = new ClassListLoader("/opt/local/packages/glassfish/lib").classes ++ new ClassListLoader("/opt/local/packages/glassfish/domains/domain1/lib").classes
+        new ClassListLoader("../callway/callway-portal/target/callway-portal-1.0.4-SNAPSHOT.war").classes.foreach { println }
+        /*val snapshot = Reader.readFile(fileName, true, 0)
+        snapshot.resolve(true)*/
+        //val interestPath = "com.tandberg"
+        /*val classes = new ClassListLoader("/opt/local/packages/glassfish/lib").classes ++ new ClassListLoader("/opt/local/packages/glassfish/domains/domain1/lib").classes
         val mine = snapshot.getClasses.asInstanceOf[java.util.Iterator[JavaClass]].filter(_.asInstanceOf[JavaClass].getName.startsWith(interestPath)).filter(!_.asInstanceOf[JavaClass].getName.contains("EntityFilter"))
 
         mine.foreach {
           clazz =>
             Analyser.checkReferencesAndPrintResult(clazz, interestPath, classes)
-        }
+        }*/
       }
     }
   }
